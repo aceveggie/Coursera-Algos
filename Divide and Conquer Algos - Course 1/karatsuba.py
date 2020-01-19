@@ -1,93 +1,79 @@
-import sys
-
-#sys.setrecursionlimit(10000)
-
-class Multiply(object):
+"""
+    Simple karatsuba multiplication
+"""
+class Multiply:
+    '''
+        This class implements Karatsuba multiplication using a recursive approach
+    '''
     def __init__(self):
         pass
-    
-    def pad_leading_zeros(self, num1, num2):
-        n_zeros = abs(len(num1) - len(num2))
-        if len(num1) > len(num2):
-            # pad zeros in num2 at front
-            return num1, '0'*n_zeros + num2
-        return '0'*n_zeros + num1, num2
-    
-    def pad_trailing_zeros(self, num1, n_zeros):
-        return num1 + '0'*n_zeros
+    def _pad_zeros(self, num: str, n_zeros: int, at_front=False) -> str:
+        """
+            takes in an string, returns padded string (at end or front)
+        """
+        zeros = '0'*n_zeros
+        if at_front:
+            return zeros + num
+        return num + zeros
 
-            
-    def recursive_karatsuba_multiplication(self, num1, num2):
+    def recursive_karatsuba_multiplication(self, num1: int, num2: int) -> int:
+        """
+            Takes in 2 integers, multiplies them recursively using
+            karatsuba multiplication formula
+        """
         num1, num2 = str(num1), str(num2)
-
-        if(len(num1) != len(num2)):
-            num1, num2 = self.pad_leading_zeros(num1, num2)
-        assert(len(num1) == len(num2))
-        n = len(num1)
+        len_num1 = len(num1)
+        len_num2 = len(num2)
+        if len_num1 != len_num2:
+            if len_num1 > len_num2:
+                num2 = self._pad_zeros(str(num2), len_num1 - len_num2, at_front=True)
+            else:
+                num1 = self._pad_zeros(str(num1), len_num2 - len_num1, at_front=True)
+        # length may changed here.
+        # However, we now have both num1 and num2 of same length 
+        len_num = len(num1)
         
-        # define your base case (for last case in recursion)
-        if n==1:
-            return int(num1)*int(num2)
-        a, b = int(num1[:n//2]), int(num1[n//2:])
-        c, d = int(num2[:n//2]), int(num2[n//2:])
+        if len_num == 1:
+            return int(num1) * int(num2)
 
-        print('a',a,'b',b,'c',c,'d',d)
+        # split the num1, num2 into a, b, c, d
+        a_s, b_s, c_s, d_s = num1[:len_num//2], num1[len_num//2:], num2[:len_num//2], num2[len_num//2:]
+        a, b, c, d = int(a_s), int(b_s), int(c_s), int(d_s)
+
+        # step1: comupute ac
         ac = self.recursive_karatsuba_multiplication(a, c)
+        # step2: compute bd
         bd = self.recursive_karatsuba_multiplication(b, d)
-        # a_b = a + b
-        # c_d = c + d
-        # ab_cd = self.recursive_karatsuba_multiplication(a_b, c_d) - ac - bd
-        # return int((10**n) * ac) +  int((10**(n/2)) * (ab_cd)) + int(bd)
-        ad = self.recursive_karatsuba_multiplication(a, d)
-        bc = self.recursive_karatsuba_multiplication(b, c)
-        return int((10**n) * ac) +  int((10**(n//2)) * (ad + bc)) + int(bd)
+        # step3 (Gauss trick): compute (ab * cd) to compute ab + bc 
+        ab_bc =  self.recursive_karatsuba_multiplication( (a+b), (c+d)) - ac - bd
 
-    # def calc_karatsuba_multiplication(self, num1, num2):
-        '''
-        non recursive: basic solution
-        '''
-        # print(len(num1) == len(num2))
-        # len1 = len(num1)
-        # len2 = len(num2)
-
-        # a, b = int(num1[:len(num1)//2]), int(num1[len(num1)//2:])
-        # c, d = int(num2[:len(num2)//2]), int(num2[len(num2)//2:])
+        # karatsuba formula
+        # ac (with padded zeros on right) + ab_bc (with padded zeros on right) + ac
         
-        # ac = a * c # step 1
-        # bd = b * d # step 2
-        # step3 = (a+b)*(c+d)
-        # step4 = step3 - bd - ac
-        # ad = a*d
-        # bc = b*c
-        # print('a',a)
-        # print('b',b)
-        # print('c',c)
-        # print('d',d)
-        # print('len1', len1)
-        # print('len2', len2)
-
-        # print('step1 ac', ac)
-        # print('step2 bd', bd)
-        # print('step3', step3)
-        # print('step4', step4)
-        
-        # output = (10**len1) * ac
-        # output += (10**(len1/2)) * (ad+bc)
+        # output = int(self._pad_zeros(str(ac), 2 * (len_num - len_num // 2), at_front=False))
+        # output += int(self._pad_zeros(str(ab_bc), len_num - len_num//2, at_front=False))
         # output += bd
-        # return output
 
-        
-num1 = '3141592653589793238462643383279502884197169399375105820974944592'
-num2 = '2718281828459045235360287471352662497757247093699959574966967627'
+        # karatsuba formula
+        # x.y = ((10 ^n) * ac) + ((10^(n/2)) * (ab+bc)) + bd
+        output = ac * (10 ** (2 * (len_num - (len_num//2))))
+        output += ab_bc * (10 ** (len_num - (len_num//2)))
+        output += bd
+        return output
 
-# num1 = '5678'
-# num2 = '1234'
+    def iterative_karatsuba_multiplication(self, num1, num2):
+        raise NotImplementedError
 
-multiplyNums = Multiply()
-# output = multiplyNums.calc_karatsuba_multiplication(num1, num2)
-output= multiplyNums.recursive_karatsuba_multiplication(num1, num2)
+if __name__=="__main__":
+    multiplyNums = Multiply()
+    # num1 = 1234
+    # num2 = 5678
+    num1 = 123456
+    num2 = 56789
+    # num1 = 3141592653589793238462643383279502884197169399375105820974944592
+    # num2 = 2718281828459045235360287471352662497757247093699959574966967627
+    recursive_output= multiplyNums.recursive_karatsuba_multiplication(num1, num2)
 
-print('num1', num1)
-print('num2', num2)
-print('output', output)
-
+    print('num1', num1)
+    print('num2', num2)
+    print('recursive_output output', recursive_output)
